@@ -136,7 +136,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "rm -rf build && conan remove \"*\" -c"
+        "rm -rf build && .venv/bin/conan remove \"*\" -c"
       ],
       "problemMatcher": [],
       "presentation": {
