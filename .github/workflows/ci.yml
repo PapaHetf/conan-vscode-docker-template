@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: conanio/conan:latest
+    
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+        arch: [x86_64, armv8]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Detect Conan Profile
+        run: conan profile detect --force
+      
+      - name: Build ${{ matrix.build_type }} (${{ matrix.arch }})
+        run: |
+          conan create . --build=missing \
+            -s build_type=${{ matrix.build_type }} \
+            -s arch=${{ matrix.arch }}
+      
+      - name: Run Tests
+        run: |
+          mkdir -p test_results
+          conan build . -s build_type=${{ matrix.build_type }}
+          ./build/${{ matrix.build_type }}/bin/ex_conan_app

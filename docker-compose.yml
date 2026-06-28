@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  conan-builder:
+    build: .
+    volumes:
+      - .:/workspace
+      - conan-cache:/root/.conan2
+    working_dir: /workspace
+    environment:
+      - CONAN_USER_HOME=/root/.conan2
+    command: /bin/bash
+
+volumes:
+  conan-cache:

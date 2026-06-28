@@ -5,7 +5,10 @@
       "label": "Build Release",
       "type": "shell",
       "command": "sh",
-      "args": ["-c", "conan create . --build=missing -s build_type=Release"],
+      "args": [
+        "-c",
+        "conan create . --build=missing -s build_type=Release"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -21,7 +24,10 @@
       "label": "Build Debug",
       "type": "shell",
       "command": "sh",
-      "args": ["-c", "conan create . --build=missing -s build_type=Debug"],
+      "args": [
+        "-c",
+        "conan create . --build=missing -s build_type=Debug"
+      ],
       "group": {
         "kind": "build"
       },
@@ -35,8 +41,11 @@
     {
       "label": "Build Release (Docker)",
       "type": "shell",
-      "command": "sh",
-      "args": ["-c", "docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace conan-builder bash -c 'cd /workspace && conan create . --build=missing -s build_type=Release'"],
+      "command": "bash",
+      "args": [
+        "-c",
+        "docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . -s build_type=Release\""
+      ],
       "group": {
         "kind": "build"
       },
@@ -51,7 +60,10 @@
       "label": "Run (Local Release)",
       "type": "shell",
       "command": "sh",
-      "args": ["-c", "conan build . -s build_type=Release && ./build/Release/bin/ex_conan_app"],
+      "args": [
+        "-c",
+        "conan build . -s build_type=Release && ./build/Release/bin/ex_conan_app"
+      ],
       "group": {
         "kind": "test",
         "isDefault": true
@@ -64,12 +76,16 @@
       }
     },
     {
-      "label": "Run (Docker Release)",
+      "label": "Build Release",
       "type": "shell",
-      "command": "sh",
-      "args": ["-c", "docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace conan-builder bash -c 'cd /workspace && conan build . -s build_type=Release && ./build/Release/bin/ex_conan_app'"],
+      "command": "bash",
+      "args": [
+        "-c",
+        "conan install . --build=missing -s build_type=Release && conan build . -s build_type=Release"
+      ],
       "group": {
-        "kind": "test"
+        "kind": "build",
+        "isDefault": true
       },
       "problemMatcher": [],
       "presentation": {
@@ -82,7 +98,10 @@
       "label": "Launch (GDB Local Debug)",
       "type": "shell",
       "command": "sh",
-      "args": ["-c", "conan build . -s build_type=Debug && gdb ./build/Debug/bin/ex_conan_app"],
+      "args": [
+        "-c",
+        "conan build . -s build_type=Debug && gdb ./build/Debug/bin/ex_conan_app"
+      ],
       "group": {
         "kind": "test"
       },
@@ -97,7 +116,10 @@
       "label": "Launch (GDB Docker Debug)",
       "type": "shell",
       "command": "sh",
-      "args": ["-c", "docker build -t conan-builder . && docker run -it --rm -v $(pwd):/workspace conan-builder bash -c 'cd /workspace && conan build . -s build_type=Debug && gdb ./build/Debug/bin/ex_conan_app'"],
+      "args": [
+        "-c",
+        "docker build -t conan-builder . && docker run -it --rm -v $(pwd):/workspace conan-builder bash -c \"cd /workspace && conan build . -s build_type=Debug && gdb ./build/Debug/bin/ex_conan_app\""
+      ],
       "group": {
         "kind": "test"
       },
@@ -111,8 +133,11 @@
     {
       "label": "Clean Build",
       "type": "shell",
-      "command": "sh",
-      "args": ["-c", "rm -rf build && conan remove '*' -c"],
+      "command": "bash",
+      "args": [
+        "-c",
+        "rm -rf build && conan remove \"*\" -c"
+      ],
       "problemMatcher": [],
       "presentation": {
         "echo": true,

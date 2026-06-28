@@ -1,0 +1,21 @@
+{
+  "name": "Conan C++ Development",
+  "image": "conanio/conan:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/cmake:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake"
+      ],
+      "settings": {
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+      }
+    }
+  },
+  "postCreateCommand": "conan profile detect --force",
+  "remoteUser": "root"
+}
