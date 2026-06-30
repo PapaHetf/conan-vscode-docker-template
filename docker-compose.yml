@@ -9,6 +9,10 @@ services:
     working_dir: /workspace
     environment:
       - CONAN_USER_HOME=/root/.conan2
+      - PROJECT_NAME=${PROJECT_NAME:-my_app}
+      - PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR:-0}
+      - PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR:-1}
+      - PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH:-0}
     command: /bin/bash
 
 volumes:
