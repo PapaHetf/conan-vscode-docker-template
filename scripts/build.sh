@@ -10,8 +10,14 @@
 
 set -e
 
-# Загружаем конфигурацию проекта
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Активируем виртуальное окружение (если есть)
+if [ -f "${SCRIPT_DIR}/../.venv/bin/activate" ]; then
+    source "${SCRIPT_DIR}/../.venv/bin/activate"
+fi
+
+# Загружаем конфигурацию проекта
 source "${SCRIPT_DIR}/../project-config.sh"
 
 BUILD_TYPE=${1:-Release}

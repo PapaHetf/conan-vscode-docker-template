@@ -11,9 +11,16 @@
 
 set -e
 
-# Загружаем конфигурацию проекта
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../project-config.sh"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Активируем виртуальное окружение (если есть)
+if [ -f "${PROJECT_DIR}/.venv/bin/activate" ]; then
+    source "${PROJECT_DIR}/.venv/bin/activate"
+fi
+
+# Загружаем конфигурацию проекта
+source "${PROJECT_DIR}/project-config.sh"
 
 BUILD_TYPE=${1:-Release}
 BUILD_ENV=${2:-local}
@@ -39,6 +46,8 @@ if [ ${#ARGS[@]} -gt 0 ]; then
     echo "Args:    ${ARGS[@]}"
 fi
 
+cd "${PROJECT_DIR}"
+
 if [ "$BUILD_ENV" = "docker" ]; then
     # Собираем аргументы в строку для передачи в docker
     ARGS_STR=""
@@ -47,7 +56,7 @@ if [ "$BUILD_ENV" = "docker" ]; then
     fi
 
     docker run --rm \
-        -v $(pwd):/workspace \
+        -v "${PROJECT_DIR}:/workspace" \
         -e PROJECT_NAME=$PROJECT_NAME \
         -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR \
         -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR \
@@ -55,9 +64,10 @@ if [ "$BUILD_ENV" = "docker" ]; then
         conan-builder bash -c \
         "cd /workspace && \
          conan install . --build=missing -s build_type=$BUILD_TYPE && \
-         conan build . -s build_type=$BUILD_TYPE && \
+         conan build . && \
          ./build/$BUILD_TYPE/bin/$TARGET_NAME $ARGS_STR"
 else
-    conan build . -s build_type=$BUILD_TYPE
+    conan install . --build=missing -s build_type=$BUILD_TYPE
+    conan build .
     ./build/$BUILD_TYPE/bin/$TARGET_NAME "${ARGS[@]}"
 fi

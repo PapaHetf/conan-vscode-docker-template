@@ -10,7 +10,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && conan create . --build=missing -s build_type=Release"
+        "source .venv/bin/activate && source project-config.sh && conan create . --build=missing -s build_type=Release"
       ],
       "group": {
         "kind": "build",
@@ -29,7 +29,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && conan create . --build=missing -s build_type=Debug"
+        "source .venv/bin/activate && source project-config.sh && conan create . --build=missing -s build_type=Debug"
       ],
       "group": {
         "kind": "build"
@@ -47,7 +47,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . -s build_type=Release\""
+        "source project-config.sh && docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build .\""
       ],
       "group": {
         "kind": "build"
@@ -68,7 +68,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && conan build . -s build_type=Release && ./build/Release/bin/$TARGET_NAME"
+        "source .venv/bin/activate && source project-config.sh && rm -rf build/Release/CMakeCache.txt build/Release/CMakeFiles && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}"
       ],
       "group": {
         "kind": "test",
@@ -87,7 +87,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . -s build_type=Release && ./build/Release/bin/$TARGET_NAME\""
+        "rm -rf build/Release/CMakeCache.txt build/Release/CMakeFiles && source project-config.sh && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}\""
       ],
       "group": {
         "kind": "test"
@@ -100,59 +100,6 @@
       }
     },
     // ============================================================
-    // RUN WITH ARGUMENTS
-    // ============================================================
-    {
-      "label": "Run Release (Local) with Args",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source project-config.sh && conan build . -s build_type=Release && ./build/Release/bin/$TARGET_NAME ${INPUT:runArgs}"
-      ],
-      "group": {
-        "kind": "test"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
-      },
-      "inputs": [
-        {
-          "id": "runArgs",
-          "type": "promptString",
-          "description": "Arguments for the program"
-        }
-      ]
-    },
-    {
-      "label": "Run Release (Docker) with Args",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source project-config.sh && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . -s build_type=Release && ./build/Release/bin/$TARGET_NAME ${INPUT:runArgsDocker}\""
-      ],
-      "group": {
-        "kind": "test"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
-      },
-      "inputs": [
-        {
-          "id": "runArgsDocker",
-          "type": "promptString",
-          "description": "Arguments for the program (Docker)"
-        }
-      ]
-    },
-    // ============================================================
     // DEBUG TASKS
     // ============================================================
     {
@@ -161,7 +108,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && conan build . -s build_type=Debug && gdb ./build/Debug/bin/$TARGET_NAME"
+        "source .venv/bin/activate && source project-config.sh && rm -rf build/Debug/CMakeCache.txt build/Debug/CMakeFiles && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME"
       ],
       "group": {
         "kind": "test"
@@ -179,7 +126,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && docker build -t conan-builder . && docker run -it --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan build . -s build_type=Debug && gdb ./build/Debug/bin/$TARGET_NAME\""
+        "source project-config.sh && docker build -t conan-builder . && docker run -it --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME\""
       ],
       "group": {
         "kind": "test"
@@ -200,7 +147,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "rm -rf build && conan remove \"*\" -c"
+        "source .venv/bin/activate && rm -rf build && conan remove \"*\" -c"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -208,6 +155,14 @@
         "reveal": "always",
         "focus": true
       }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "runArgs",
+      "type": "promptString",
+      "description": "Arguments for the program",
+      "default": "Hi"
     }
   ]
 }
