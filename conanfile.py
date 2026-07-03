@@ -1,6 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain, CMakeDeps
 from conan.tools.files import copy
+from conan.tools.build import can_run
 import os
 
 
@@ -29,6 +30,11 @@ class ProjectConan(ConanFile):
         if self.options.shared:
             del self.options.fPIC
 
+    def requirements(self):
+        # Примеры внешних зависимостей C/C++ библиотек
+        # Conan автоматически скачает и настроит их
+        self.requires("spdlog/1.12.0")       # Логирование
+
     def layout(self):
         cmake_layout(self)
 
@@ -43,6 +49,11 @@ class ProjectConan(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
+
+    def test(self):
+        if can_run(self):
+            bin_path = os.path.join(self.cpp.build.bindirs[0], "program-{}".format(self.version))
+            self.run(bin_path, env="conanrun")
 
     def package(self):
         # Динамическое имя таргета: program-{major}.{minor}.{patch}

@@ -55,13 +55,7 @@ if [ "$BUILD_ENV" = "docker" ]; then
         ARGS_STR="${ARGS[@]}"
     fi
 
-    docker run --rm \
-        -v "${PROJECT_DIR}:/workspace" \
-        -e PROJECT_NAME=$PROJECT_NAME \
-        -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR \
-        -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR \
-        -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH \
-        conan-builder bash -c \
+    docker compose run --rm conan-builder bash -c \
         "cd /workspace && \
          conan install . --build=missing -s build_type=$BUILD_TYPE && \
          conan build . && \

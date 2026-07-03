@@ -10,7 +10,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source .venv/bin/activate && source project-config.sh && conan create . --build=missing -s build_type=Release"
+        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Release && conan build ."
       ],
       "group": {
         "kind": "build",
@@ -29,7 +29,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source .venv/bin/activate && source project-config.sh && conan create . --build=missing -s build_type=Debug"
+        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Debug && conan build ."
       ],
       "group": {
         "kind": "build"
@@ -47,7 +47,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && docker build -t conan-builder . && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build .\""
+        "source project-config.sh && docker compose run --rm conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build .\""
       ],
       "group": {
         "kind": "build"
@@ -68,7 +68,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source .venv/bin/activate && source project-config.sh && rm -rf build/Release/CMakeCache.txt build/Release/CMakeFiles && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}"
+        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}"
       ],
       "group": {
         "kind": "test",
@@ -87,7 +87,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "rm -rf build/Release/CMakeCache.txt build/Release/CMakeFiles && source project-config.sh && docker run --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}\""
+        "source project-config.sh && docker compose run --rm conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}\""
       ],
       "group": {
         "kind": "test"
@@ -126,7 +126,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source project-config.sh && docker build -t conan-builder . && docker run -it --rm -v $(pwd):/workspace -e PROJECT_NAME=$PROJECT_NAME -e PROJECT_VERSION_MAJOR=$PROJECT_VERSION_MAJOR -e PROJECT_VERSION_MINOR=$PROJECT_VERSION_MINOR -e PROJECT_VERSION_PATCH=$PROJECT_VERSION_PATCH conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME\""
+        "source project-config.sh && docker compose run --rm --service-ports conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME\""
       ],
       "group": {
         "kind": "test"

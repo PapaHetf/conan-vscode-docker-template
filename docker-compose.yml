@@ -5,14 +5,13 @@ services:
     build: .
     volumes:
       - .:/workspace
+      - ./build/docker:/workspace/build
       - conan-cache:/root/.conan2
     working_dir: /workspace
+    env_file:
+      - .env
     environment:
       - CONAN_USER_HOME=/root/.conan2
-      - PROJECT_NAME=${PROJECT_NAME:-my_app}
-      - PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR:-0}
-      - PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR:-1}
-      - PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH:-0}
     command: /bin/bash
 
 volumes:
