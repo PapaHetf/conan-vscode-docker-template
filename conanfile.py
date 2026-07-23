@@ -26,14 +26,20 @@ class ProjectConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
+        self.options["boost"].without_all = True
+        self.options["boost"].without_program_options = False
     def configure(self):
         if self.options.shared:
             del self.options.fPIC
 
     def requirements(self):
-        # Примеры внешних зависимостей C/C++ библиотек
-        # Conan автоматически скачает и настроит их
         self.requires("spdlog/1.12.0")       # Логирование
+        self.requires("fmt/10.2.1")          # Форматирование строк
+        self.requires("libpq/15.4")          # PostgreSQL C client library
+        self.requires("libpqxx/7.9.2")       # PostgreSQL C++ client library
+        self.requires("ctre/3.9.0")          # Compile-time regular expressions
+        self.requires("openssl/1.1.1t")      # OpenSSL cryptography
+        self.requires("boost/1.86.0")
 
     def layout(self):
         cmake_layout(self)

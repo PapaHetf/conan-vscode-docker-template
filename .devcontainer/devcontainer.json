@@ -1,21 +1,40 @@
 {
   "name": "Conan C++ Development",
-  "image": "conanio/conan:latest",
-  "features": {
-    "ghcr.io/devcontainers/features/cmake:1": {}
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
-        "twxs.cmake"
+        "twxs.cmake",
+        "llvm-vs-code-extensions.vscode-clangd"
       ],
       "settings": {
-        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+        "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+        "clangd.path": "/usr/bin/clangd",
+        "clangd.arguments": [
+          "--background-index",
+          "--clang-tidy",
+          "--header-insertion=iwyu",
+          "--completion-style=detailed",
+          "--pch-storage=memory"
+        ],
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "C_Cpp.autocomplete": "disabled",
+        "C_Cpp.errorSquiggles": "disabled",
+        "editor.formatOnSave": true,
+        "[cpp]": {
+          "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+        }
       }
     }
   },
-  "postCreateCommand": "conan profile detect --force",
+  "mounts": [
+    "source=conan-cache,target=/root/.conan2,type=volume"
+  ],
+  "postCreateCommand": "rm -rf build/Release/CMakeCache.txt build/Release/CMakeFiles build/Debug/CMakeCache.txt build/Debug/CMakeFiles && conan profile detect --force && set -a && . ./.env && set +a && conan install . --build=missing -s build_type=Release --output-folder=build/Release && conan install . --build=missing -s build_type=Debug --output-folder=build/Debug",
   "remoteUser": "root"
 }

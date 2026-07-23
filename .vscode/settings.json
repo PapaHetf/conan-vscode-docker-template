@@ -1,9 +1,24 @@
 {
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.sourceDirectory": "${workspaceFolder}",
-    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.buildDirectory": "${workspaceFolder}/build/${buildType}",
+    "cmake.configureSettings": {
+        "CMAKE_PREFIX_PATH": "${workspaceFolder}/build/${buildType}/generators",
+        "CMAKE_MODULE_PATH": "${workspaceFolder}/build/${buildType}/generators"
+    },
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+    "clangd.path": "/usr/bin/clangd",
+    "clangd.arguments": [
+        "--background-index",
+        "--clang-tidy",
+        "--header-insertion=iwyu",
+        "--completion-style=detailed",
+        "--pch-storage=memory"
+    ],
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.autocomplete": "disabled",
+    "C_Cpp.errorSquiggles": "disabled",
     "editor.formatOnSave": true,
     "[cpp]": {
-        "editor.defaultFormatter": "ms-vscode.cpptools"
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
     }
 }
