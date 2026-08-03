@@ -1,0 +1,17 @@
+# Стиль кода проекта. Совместимо с clang-format >= 14.
+# Форматирование: ./scripts/format.sh   (проверка: ./scripts/format.sh --check)
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+ColumnLimit: 80
+IndentWidth: 2
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+FixNamespaceComments: true
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+...

@@ -1,0 +1,47 @@
+// Dev-контейнер: Debian 12.
+// VS Code: «Dev Containers: Reopen in Container» -> выбрать вариант.
+// Другой дистрибутив: скопируйте этот каталог и поменяйте BASE_IMAGE и имена ниже.
+{
+  "name": "C++ (Debian 12)",
+  "build": {
+    "dockerfile": "../../docker/Dockerfile",
+    "context": "../..",
+    "args": {
+      "BASE_IMAGE": "debian:12"
+    }
+  },
+
+  // Единый путь /workspace — как в docker-compose.yml и scripts/*.sh
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "workspaceFolder": "/workspace",
+
+  // Отдельный каталог сборки и кэш Conan для этого контейнера,
+  // чтобы не конфликтовать со сборками на хосте и в других вариантах
+  "initializeCommand": "mkdir -p build/devcontainer-debian-12",
+  "mounts": [
+    "source=${localWorkspaceFolder}/build/devcontainer-debian-12,target=/workspace/build,type=bind",
+    "source=${localWorkspaceFolderBasename}-conan-devcontainer-debian-12,target=/root/.conan2,type=volume"
+  ],
+
+  // gdb и LeakSanitizer используют ptrace
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt", "seccomp=unconfined",
+    "--env-file", "${localWorkspaceFolder}/.env"
+  ],
+
+  // Сабмодули, профиль Conan, зависимости Debug/Release, compile_commands.json
+  "postCreateCommand": "./scripts/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "editorconfig.editorconfig"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}

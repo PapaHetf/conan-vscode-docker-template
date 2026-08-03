@@ -1,36 +1,78 @@
-name: CI/CD Pipeline
+# ============================================================
+# CI: сборка и тесты по матрице «дистрибутив × архитектура × тип сборки».
+# Каждая комбинация собирается в том же Docker-образе и теми же скриптами,
+# что и локально (./scripts/build.sh, ./scripts/test.sh).
+# ============================================================
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: conanio/conan:latest
-    
+    name: ${{ matrix.distro }} / ${{ matrix.arch }} / ${{ matrix.build_type }}
+    runs-on: ${{ matrix.runner }}
     strategy:
+      fail-fast: false
       matrix:
-        build_type: [Release, Debug]
-        arch: [x86_64, armv8]
-    
+        # Дистрибутивы = файлы docker/variants/<distro>.env
+        distro: [ubuntu-24.04, debian-12]
+        build_type: [Debug, Release]
+        arch: [amd64]
+        runner: [ubuntu-24.04]
+        # Сборка под arm64 на нативном ARM-раннере GitHub (без эмуляции).
+        # Раскомментируйте, чтобы добавить arm64 в матрицу:
+        # include:
+        #   - { distro: ubuntu-24.04, build_type: Release, arch: arm64, runner: ubuntu-24.04-arm }
+        #   - { distro: debian-12,    build_type: Release, arch: arm64, runner: ubuntu-24.04-arm }
+
+    env:
+      # Кэш Conan — каталог на раннере (сохраняется между запусками через actions/cache)
+      CONAN_CACHE: ${{ github.workspace }}/../conan-cache
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Detect Conan Profile
-        run: conan profile detect --force
-      
-      - name: Build ${{ matrix.build_type }} (${{ matrix.arch }})
-        run: |
-          conan create . --build=missing \
-            -s build_type=${{ matrix.build_type }} \
-            -s arch=${{ matrix.arch }}
-      
-      - name: Run Tests
-        run: |
-          mkdir -p test_results
-          conan build . -s build_type=${{ matrix.build_type }}
-          ./build/${{ matrix.build_type }}/bin/ex_conan_app
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CONAN_CACHE }}
+          key: conan-${{ matrix.distro }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ hashFiles('conanfile.py', 'docker/Dockerfile', 'docker/packages*.txt') }}
+          restore-keys: |
+            conan-${{ matrix.distro }}-${{ matrix.arch }}-${{ matrix.build_type }}-
+
+      - name: Build
+        run: ./scripts/build.sh --distro ${{ matrix.distro }} --arch ${{ matrix.arch }} --type ${{ matrix.build_type }}
+
+      - name: Test
+        run: ./scripts/test.sh --distro ${{ matrix.distro }} --arch ${{ matrix.arch }} --type ${{ matrix.build_type }}
+
+      - name: Shrink Conan cache
+        if: always()
+        run: ./scripts/exec.sh --distro ${{ matrix.distro }} --arch ${{ matrix.arch }} -- conan cache clean "*" --source --build --download --temp
+
+      - name: Upload binary
+        if: matrix.build_type == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.distro }}-${{ matrix.arch }}
+          path: build/${{ matrix.distro }}-${{ matrix.arch }}/Release/bin/
+          if-no-files-found: error
+
+  lint:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check formatting
+        run: ./scripts/format.sh --check

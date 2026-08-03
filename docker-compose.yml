@@ -1,18 +1,42 @@
-version: '3.8'
+# ============================================================
+# Контейнер сборки. Все параметры варианта приходят из переменных окружения,
+# которые выставляют scripts/*.sh (см. scripts/lib/variant.sh):
+#   VARIANT                  — <distro>-<arch>, напр. ubuntu-24.04-arm64
+#   BASE_IMAGE               — базовый образ (docker/variants/<distro>.env)
+#   DOCKER_DEFAULT_PLATFORM  — linux/amd64 | linux/arm64 (эмуляция чужой архитектуры)
+#
+# Без скриптов используется вариант по умолчанию:
+#   docker compose run --rm builder
+# ============================================================
 
 services:
-  conan-builder:
-    build: .
+  builder:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-ubuntu:24.04}
+        EXTRA_PACKAGES: ${EXTRA_PACKAGES:-}
+    image: ${PROJECT_NAME:-my_app}-dev:${VARIANT:-default}
     volumes:
       - .:/workspace
-      - ./build/docker:/workspace/build
-      - conan-cache:/root/.conan2
+      # У каждого варианта свой каталог сборки: build/<variant>/{Debug,Release}
+      - ./build/${VARIANT:-default}:/workspace/build
+      # и свой кэш Conan (бинарники зависимостей + профиль компилятора).
+      # CONAN_CACHE может указывать на каталог хоста (используется в CI)
+      - ${CONAN_CACHE:-conan-cache}:/root/.conan2
     working_dir: /workspace
     env_file:
       - .env
     environment:
-      - CONAN_USER_HOME=/root/.conan2
+      - VARIANT=${VARIANT:-default}
+    # gdb и LeakSanitizer используют ptrace
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
     command: /bin/bash
 
 volumes:
   conan-cache:
+    name: ${PROJECT_NAME:-my_app}-conan-${VARIANT:-default}

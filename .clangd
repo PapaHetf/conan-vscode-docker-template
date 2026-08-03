@@ -1,0 +1,6 @@
+# Настройки clangd (подсказки, переходы, clang-tidy в редакторе).
+# База компиляции создаётся CMake (CMAKE_EXPORT_COMPILE_COMMANDS) при сборке Debug.
+CompileFlags:
+  CompilationDatabase: build/Debug
+Diagnostics:
+  UnusedIncludes: Strict

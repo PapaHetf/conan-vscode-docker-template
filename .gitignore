@@ -69,3 +69,31 @@ Testing/
 .cache/
 
 .venv/
+
+# Conan: сгенерированные скрипты окружения и пресеты (зависят от машины)
+conan*.sh
+deactivate_*.sh
+CMakeUserPresets.json
+
+# CMake Tools / IDE артефакты
+out/
+
+# macOS
+.DS_Store
+
+# Ключи и сертификаты — никогда не коммитить
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Python (scripts/lib/*.py, conanfile.py)
+__pycache__/
+*.py[cod]
+
+# Другие IDE
+.idea/
+cmake-build-*/
+
+# Claude Code: личные локальные настройки
+.claude/settings.local.json

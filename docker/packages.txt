@@ -1,0 +1,32 @@
+# ============================================================
+# Базовые пакеты образа (имена одинаковы для Ubuntu и Debian).
+# Свои пакеты добавляйте в docker/packages.extra.txt.
+# ============================================================
+
+# Сборка
+build-essential
+cmake
+ninja-build
+pkg-config
+make
+perl
+
+# Python + pipx (для Conan)
+python3
+python3-pip
+python3-venv
+pipx
+
+# Инструменты разработчика
+git
+gdb
+file
+less
+nano
+ca-certificates
+
+# LLVM-инструменты (версия по умолчанию для дистрибутива)
+clang
+clangd
+clang-format
+clang-tidy

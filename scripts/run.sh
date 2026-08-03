@@ -1,67 +1,22 @@
 #!/bin/bash
-
-# Run script for Conan project
-# Usage: ./scripts/run.sh [Release|Debug] [local|docker] [-- args...]
+# ============================================================
+# Сборка и запуск программы
+# ============================================================
+# Использование:
+#   ./scripts/run.sh [--distro D] [--arch A] [--type Debug|Release] [--local] [-- args...]
 #
-# Examples:
-#   ./scripts/run.sh Release local
-#   ./scripts/run.sh Debug docker
-#   ./scripts/run.sh Release docker -- --help
-#   ./scripts/run.sh Release docker -- --input data.txt --verbose
+# Примеры:
+#   ./scripts/run.sh -- --help
+#   ./scripts/run.sh --type Release -- --path ./data --password secret
+#   ./scripts/run.sh --distro debian-12 -- --help
+# ============================================================
 
-set -e
+source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+parse_args "$@"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
-# Активируем виртуальное окружение (если есть)
-if [ -f "${PROJECT_DIR}/.venv/bin/activate" ]; then
-    source "${PROJECT_DIR}/.venv/bin/activate"
+log "Запуск: $(describe)"
+if [ ${#PROGRAM_ARGS[@]} -gt 0 ]; then
+    log "Аргументы: ${PROGRAM_ARGS[*]}"
 fi
-
-# Загружаем конфигурацию проекта
-source "${PROJECT_DIR}/project-config.sh"
-
-BUILD_TYPE=${1:-Release}
-BUILD_ENV=${2:-local}
-
-# Всё, что после "--", считаем аргументами для программы
-ARGS=()
-if [[ "$*" == *"--"* ]]; then
-    ARGS=("${@:3}")
-    # Удаляем всё до "--" включительно
-    while [[ "${ARGS[0]}" != "--" && ${#ARGS[@]} -gt 0 ]]; do
-        ARGS=("${ARGS[@]:1}")
-    done
-    # Удаляем сам "--"
-    if [[ "${ARGS[0]}" == "--" ]]; then
-        ARGS=("${ARGS[@]:1}")
-    fi
-fi
-
-echo "Running $BUILD_TYPE configuration..."
-echo "Project: $PROJECT_NAME $PROJECT_VERSION_STRING"
-echo "Target:  $TARGET_NAME"
-if [ ${#ARGS[@]} -gt 0 ]; then
-    echo "Args:    ${ARGS[@]}"
-fi
-
-cd "${PROJECT_DIR}"
-
-if [ "$BUILD_ENV" = "docker" ]; then
-    # Собираем аргументы в строку для передачи в docker
-    ARGS_STR=""
-    if [ ${#ARGS[@]} -gt 0 ]; then
-        ARGS_STR="${ARGS[@]}"
-    fi
-
-    docker compose run --rm conan-builder bash -c \
-        "cd /workspace && \
-         conan install . --build=missing -s build_type=$BUILD_TYPE && \
-         conan build . && \
-         ./build/$BUILD_TYPE/bin/$TARGET_NAME $ARGS_STR"
-else
-    conan install . --build=missing -s build_type=$BUILD_TYPE
-    conan build .
-    ./build/$BUILD_TYPE/bin/$TARGET_NAME "${ARGS[@]}"
-fi
+IN_ENV_TTY=1 in_env "$(conan_build_cmd "$(quote_args "${EXTRA_ARGS[@]}")") && \
+./build/${BUILD_TYPE}/bin/${TARGET_NAME}$(quote_args "${PROGRAM_ARGS[@]}")"

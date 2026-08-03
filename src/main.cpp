@@ -1,37 +1,23 @@
-#include "hello.h"
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 
-// Conan-зависимости: fmt и spdlog
-#include <boost/program_options.hpp>
-#include <fmt/core.h>
-#include <spdlog/spdlog.h>
+#include "program_args.hpp"
 
-int main(int argc, char *argv[]) {
-  // spdlog — установка уровня логирования
-  spdlog::set_level(spdlog::level::debug);
-  spdlog::debug("Starting main() with {} argument(s)", argc);
+int main(int argc, char **argv) {
+  args::ProgramOptions prog_opt;
 
-  // fmt — форматированный вывод
-  std::cout << fmt::format("Hello from Conan + Docker + VSCode!\n");
-  printHello();
+  auto res = prog_opt.parse(argc, argv);
 
-  // Демонстрация fmt с аргументами
-  if (argc > 1) {
-    spdlog::info("Processing {} command-line argument(s)", argc - 1);
-    std::cout << fmt::format("\nArguments received:\n");
-    for (int i = 1; i < argc; ++i) {
-      std::cout << fmt::format("  [{}] {}\n", i, argv[i]);
-    }
-    // Демонстрация printFormatted с первым аргументом
-    printFormatted(argv[1], argc);
-  } else {
-    spdlog::warn("No arguments provided");
-    std::cout << fmt::format("\nNo arguments provided.\n");
+  if (res.has_error()) {
+    std::cerr << res.error() << std::endl;
+    return EXIT_FAILURE;
   }
 
-  std::cout << fmt::format(
-      "Usage: ./program-{{major}}.{{minor}}.{{patch}} [args...]\n");
+  if (res.has_value()) {
+    printf("Working directory: %s\n",
+           args::WorkingDirectory::load(prog_opt.get_variables_map()).c_str());
+  }
 
-  spdlog::info("Application finished successfully");
   return 0;
 }

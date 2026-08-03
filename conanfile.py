@@ -5,6 +5,19 @@ from conan.tools.build import can_run
 import os
 
 
+# Компилируемые компоненты Boost, которые проекту НЕ нужны.
+# Нужные (container, program_options) сюда не входят.
+# Чтобы включить компонент — удалите его из списка.
+_BOOST_DISABLED = (
+    "atomic", "charconv", "chrono", "cobalt", "context", "contract",
+    "coroutine", "date_time", "exception", "fiber", "filesystem", "graph",
+    "graph_parallel", "iostreams", "json", "locale", "log", "math", "mpi",
+    "nowide", "process", "python", "random", "regex", "serialization",
+    "stacktrace", "system", "test", "thread", "timer", "type_erasure", "url",
+    "wave",
+)
+
+
 class ProjectConan(ConanFile):
     # Имя и версия берутся из переменных окружения (с запасными значениями)
     name = os.environ.get("PROJECT_NAME", "my_app")
@@ -17,35 +30,67 @@ class ProjectConan(ConanFile):
     description = "C++ project with Conan and Docker"
 
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
+    options = {
+        "shared": [True, False],
+        "fPIC": [True, False],
+        # Опциональные зависимости шаблона. Включение:
+        #   conan install . -o "&:with_postgres=True"
+        "with_tests": [True, False],     # GoogleTest + каталог tests/
+        "with_postgres": [True, False],  # libpq + libpqxx
+        "with_ctre": [True, False],      # compile-time regex
+        "with_spdlog": [True, False],    # логирование
+    }
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "with_tests": True,
+        "with_postgres": False,
+        "with_ctre": False,
+        "with_spdlog": False,
+        **{f"boost/*:without_{c}": True for c in _BOOST_DISABLED},
+    }
 
-    exports_sources = "src/*", "CMakeLists.txt", "include/*", "cmake/*"
+    exports_sources = (
+        "src/*", "include/*", "cmake/*", "libraries/*", "tests/*",
+        "CMakeLists.txt",
+    )
 
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-        self.options["boost"].without_all = True
-        self.options["boost"].without_program_options = False
     def configure(self):
         if self.options.shared:
-            del self.options.fPIC
+            self.options.rm_safe("fPIC")
 
     def requirements(self):
-        self.requires("spdlog/1.12.0")       # Логирование
-        self.requires("fmt/10.2.1")          # Форматирование строк
-        self.requires("libpq/15.4")          # PostgreSQL C client library
-        self.requires("libpqxx/7.9.2")       # PostgreSQL C++ client library
-        self.requires("ctre/3.9.0")          # Compile-time regular expressions
-        self.requires("openssl/1.1.1t")      # OpenSSL cryptography
-        self.requires("boost/1.86.0")
+        self.requires("fmt/10.2.1")                  # Форматирование строк
+        self.requires("boost/1.86.0")                # program_options, outcome, container
+        self.requires("openssl/3.0.15", force=True)  # OpenSSL cryptography
+
+        if self.options.with_spdlog:
+            self.requires("spdlog/1.12.0")           # Логирование
+        if self.options.with_postgres:
+            self.requires("libpq/15.4")              # PostgreSQL C client library
+            self.requires("libpqxx/7.9.2")           # PostgreSQL C++ client library
+        if self.options.with_ctre:
+            self.requires("ctre/3.9.0")              # Compile-time regular expressions
+
+    def build_requirements(self):
+        if self.options.with_tests:
+            self.test_requires("gtest/1.15.0")
 
     def layout(self):
         cmake_layout(self)
 
     def generate(self):
         tc = CMakeToolchain(self)
+
+        # Опции Conan -> переменные CMake
+        tc.cache_variables["BUILD_TESTING"] = bool(self.options.with_tests)
+        tc.cache_variables["WITH_POSTGRES"] = bool(self.options.with_postgres)
+        tc.cache_variables["WITH_CTRE"] = bool(self.options.with_ctre)
+        tc.cache_variables["WITH_SPDLOG"] = bool(self.options.with_spdlog)
         tc.generate()
 
         deps = CMakeDeps(self)
@@ -55,46 +100,25 @@ class ProjectConan(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
-
-    def test(self):
-        if can_run(self):
-            bin_path = os.path.join(self.cpp.build.bindirs[0], "program-{}".format(self.version))
-            self.run(bin_path, env="conanrun")
+        # Запускаем только тесты проекта (у сабмодулей в libraries/ могут быть свои ctest-тесты)
+        if self.options.with_tests and can_run(self) \
+                and not self.conf.get("tools.build:skip_test", check_type=bool):
+            self.run(f'ctest --test-dir "{os.path.join(self.build_folder, "tests")}" '
+                     f'--output-on-failure', env="conanrun")
 
     def package(self):
-        # Динамическое имя таргета: program-{major}.{minor}.{patch}
-        target_name = f"program-{self.version}"
-
-        # Копировать бинарник из build/Release/bin
+        # Бинарник: {name}-{major}.{minor}.{patch} (см. cmake/project-config.cmake)
+        target_name = f"{self.name}-{self.version}"
         copy(self, target_name,
              src=os.path.join(self.build_folder, "bin"),
              dst=os.path.join(self.package_folder, "bin"),
              keep_path=False)
-
-        copy(self, "*.exe",
+        copy(self, f"{target_name}.exe",
              src=os.path.join(self.build_folder, "bin"),
              dst=os.path.join(self.package_folder, "bin"),
              keep_path=False)
 
-        # Копировать библиотеки
-        copy(self, "*.lib",
-             src=os.path.join(self.build_folder, "lib"),
-             dst=os.path.join(self.package_folder, "lib"),
-             keep_path=False)
-        copy(self, "*.so*",
-             src=os.path.join(self.build_folder, "lib"),
-             dst=os.path.join(self.package_folder, "lib"),
-             keep_path=False)
-        copy(self, "*.dylib",
-             src=os.path.join(self.build_folder, "lib"),
-             dst=os.path.join(self.package_folder, "lib"),
-             keep_path=False)
-        copy(self, "*.a",
-             src=os.path.join(self.build_folder, "lib"),
-             dst=os.path.join(self.package_folder, "lib"),
-             keep_path=False)
-
-        # Копировать заголовочные файлы
+        # Заголовочные файлы
         copy(self, "*.h",
              src=os.path.join(self.source_folder, "include"),
              dst=os.path.join(self.package_folder, "include"),
@@ -102,5 +126,5 @@ class ProjectConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.bindirs = ["bin"]
-        self.cpp_info.libdirs = ["lib"]
+        self.cpp_info.libdirs = []
         self.cpp_info.includedirs = ["include"]

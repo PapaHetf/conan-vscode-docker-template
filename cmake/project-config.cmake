@@ -40,8 +40,8 @@ endif()
 # Строка версии
 set(PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-# Имя исполняемого файла: program-{major}.{minor}.{patch}
-set(TARGET_NAME "program-${PROJECT_VERSION_STRING}")
+# Имя исполняемого файла: {PROJECT_NAME}-{major}.{minor}.{patch}
+set(TARGET_NAME "${PROJECT_NAME}-${PROJECT_VERSION_STRING}")
 
 message(STATUS "Project: ${PROJECT_NAME} ${PROJECT_VERSION_STRING}")
 message(STATUS "Target:  ${TARGET_NAME}")

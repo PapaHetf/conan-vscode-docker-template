@@ -21,7 +21,7 @@
 #
 # Использование в shell:
 #   source ./project-config.sh
-#   echo $TARGET_NAME  # program-1.2.3
+#   echo $TARGET_NAME  # my_app-1.2.3
 #
 # Использование в CMake:
 #   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/project-config.cmake")
@@ -50,4 +50,4 @@ export PROJECT_VERSION_MINOR="${PROJECT_VERSION_MINOR:-1}"
 export PROJECT_VERSION_PATCH="${PROJECT_VERSION_PATCH:-0}"
 
 export PROJECT_VERSION_STRING="${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
-export TARGET_NAME="program-${PROJECT_VERSION_STRING}"
+export TARGET_NAME="${PROJECT_NAME}-${PROJECT_VERSION_STRING}"

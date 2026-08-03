@@ -1,17 +1,29 @@
 {
+  // Отладка gdb — внутри dev-контейнера (Dev Containers: Reopen in Container).
+  // Программа и тесты собираются CMake Tools в build/Debug перед запуском.
+  // Если программа не выбрана: «CMake: Set Launch/Debug Target».
+  //
+  // ASan под отладчиком: при ошибке gdb останавливается на месте (abort_on_error);
+  // LeakSanitizer под ptrace не работает, поэтому detect_leaks=0
+  // (утечки проверяются обычным запуском ./scripts/test.sh / run.sh).
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch (GDB Local Debug)",
+      "name": "Debug: программа (gdb)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/bin/ex_conan_app",
+      "program": "${command:cmake.launchTargetPath}",
+      // Аргументы программы, напр.: ["--path", "./data", "--password", "123"]
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [],
+      "environment": [
+        { "name": "ASAN_OPTIONS", "value": "detect_leaks=0:abort_on_error=1" },
+        { "name": "UBSAN_OPTIONS", "value": "print_stacktrace=1" }
+      ],
       "externalConsole": false,
       "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
       "setupCommands": [
         {
           "description": "Enable pretty-printing for gdb",
@@ -19,22 +31,32 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "Build Debug",
-      "miDebuggerPath": "/usr/bin/gdb"
+      "preLaunchTask": "CMake: build"
     },
     {
-      "name": "Run (Local Release)",
+      "name": "Debug: тесты (gdb)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Release/bin/ex_conan_app",
+      "program": "${workspaceFolder}/build/Debug/bin/unit_tests",
+      // Фильтр тестов, напр.: ["--gtest_filter=SampleTest.*"]
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [],
+      "environment": [
+        { "name": "ASAN_OPTIONS", "value": "detect_leaks=0:abort_on_error=1" },
+        { "name": "UBSAN_OPTIONS", "value": "print_stacktrace=1" }
+      ],
       "externalConsole": false,
       "MIMode": "gdb",
-      "preLaunchTask": "Build Release",
-      "miDebuggerPath": "/usr/bin/gdb"
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "CMake: build"
     }
   ]
 }

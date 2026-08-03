@@ -1,168 +1,350 @@
+// Задачи VS Code — тонкие обёртки над scripts/*.sh.
+// С хоста скрипты собирают в Docker (вариант по умолчанию — DISTRO/ARCH в .env),
+// внутри dev-контейнера — локально. «…» — задачи с выбором дистрибутива/архитектуры.
+// Новый дистрибутив добавьте в inputs -> distro.
 {
   "version": "2.0.0",
   "tasks": [
-    // ============================================================
-    // BUILD TASKS
-    // ============================================================
     {
-      "label": "Build Release (Local)",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Release && conan build ."
+      "label": "CMake: build",
+      "type": "cmake",
+      "command": "build",
+      "targets": [
+        "all"
       ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "detail": "Сборка текущего пресета CMake Tools (используется отладчиком)"
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "./scripts/build.sh",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "Build Debug (Local)",
+      "label": "Build Release",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Debug && conan build ."
+      "command": "./scripts/build.sh --type Release",
+      "problemMatcher": [
+        "$gcc"
       ],
-      "group": {
-        "kind": "build"
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
       },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "Build Release (Docker)",
+      "label": "Build (выбрать вариант)…",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source project-config.sh && docker compose run --rm conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build .\""
+      "command": "./scripts/build.sh --distro ${input:distro} --arch ${input:arch} --type ${input:buildType}",
+      "problemMatcher": [
+        "$gcc"
       ],
-      "group": {
-        "kind": "build"
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
       },
-      "problemMatcher": [],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "./scripts/test.sh",
+      "problemMatcher": [
+        "$gcc"
+      ],
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true
-      }
-    },
-    // ============================================================
-    // RUN TASKS
-    // ============================================================
-    {
-      "label": "Run Release (Local)",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source .venv/bin/activate && source project-config.sh && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}"
-      ],
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
       "group": {
         "kind": "test",
         "isDefault": true
       },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "Run Release (Docker)",
+      "label": "Test (выбрать вариант)…",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source project-config.sh && docker compose run --rm conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Release && conan build . && ./build/Release/bin/$TARGET_NAME ${input:runArgs}\""
+      "command": "./scripts/test.sh --distro ${input:distro} --arch ${input:arch} --type ${input:buildType}",
+      "problemMatcher": [
+        "$gcc"
       ],
-      "group": {
-        "kind": "test"
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
       },
-      "problemMatcher": [],
+      "group": "test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Run",
+      "type": "shell",
+      "command": "./scripts/run.sh -- ${input:runArgs}",
+      "problemMatcher": [
+        "$gcc"
+      ],
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true
-      }
-    },
-    // ============================================================
-    // DEBUG TASKS
-    // ============================================================
-    {
-      "label": "Launch (GDB Local Debug)",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source .venv/bin/activate && source project-config.sh && rm -rf build/Debug/CMakeCache.txt build/Debug/CMakeFiles && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME"
-      ],
-      "group": {
-        "kind": "test"
+        "focus": false,
+        "panel": "shared",
+        "clear": true
       },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "Launch (GDB Docker Debug)",
+      "label": "Run (выбрать вариант)…",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source project-config.sh && docker compose run --rm --service-ports conan-builder bash -c \"cd /workspace && conan install . --build=missing -s build_type=Debug && conan build . && gdb ./build/Debug/bin/$TARGET_NAME\""
+      "command": "./scripts/run.sh --distro ${input:distro} --arch ${input:arch} --type ${input:buildType} -- ${input:runArgs}",
+      "problemMatcher": [
+        "$gcc"
       ],
-      "group": {
-        "kind": "test"
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
       },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
-    // ============================================================
-    // UTILITY TASKS
-    // ============================================================
     {
-      "label": "Clean Build",
+      "label": "Matrix: все дистрибутивы",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "source .venv/bin/activate && rm -rf build && conan remove \"*\" -c"
+      "command": "./scripts/matrix.sh",
+      "problemMatcher": [
+        "$gcc"
       ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Matrix: все дистрибутивы × amd64,arm64",
+      "type": "shell",
+      "command": "./scripts/matrix.sh --arches \"amd64 arm64\"",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Shell в контейнере…",
+      "type": "shell",
+      "command": "./scripts/shell.sh --distro ${input:distro} --arch ${input:arch}",
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Setup (conan install Debug+Release)",
+      "type": "shell",
+      "command": "./scripts/setup.sh",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Format",
+      "type": "shell",
+      "command": "./scripts/format.sh",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Format: check",
+      "type": "shell",
+      "command": "./scripts/format.sh --check",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Clang-tidy",
+      "type": "shell",
+      "command": "./scripts/tidy.sh",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Clean (вариант по умолчанию)",
+      "type": "shell",
+      "command": "./scripts/clean.sh",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Clean all (+ кэш Conan)",
+      "type": "shell",
+      "command": "./scripts/clean.sh --all --cache",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "clear": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     }
   ],
   "inputs": [
     {
+      "id": "distro",
+      "type": "pickString",
+      "description": "Дистрибутив (docker/variants/*.env)",
+      "options": [
+        "ubuntu-24.04",
+        "debian-12"
+      ],
+      "default": "ubuntu-24.04"
+    },
+    {
+      "id": "arch",
+      "type": "pickString",
+      "description": "Архитектура (native = как у хоста; чужая — через эмуляцию)",
+      "options": [
+        "native",
+        "amd64",
+        "arm64"
+      ],
+      "default": "native"
+    },
+    {
+      "id": "buildType",
+      "type": "pickString",
+      "description": "Тип сборки",
+      "options": [
+        "Debug",
+        "Release"
+      ],
+      "default": "Debug"
+    },
+    {
       "id": "runArgs",
       "type": "promptString",
-      "description": "Arguments for the program",
-      "default": "Hi"
+      "description": "Аргументы программы",
+      "default": "--help"
     }
   ]
 }

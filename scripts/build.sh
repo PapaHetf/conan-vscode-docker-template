@@ -1,37 +1,24 @@
 #!/bin/bash
-
-# Build script for Conan project
-# Usage: ./scripts/build.sh [Release|Debug] [local|docker]
+# ============================================================
+# Сборка проекта (Conan install + CMake build)
+# ============================================================
+# Использование:
+#   ./scripts/build.sh [--distro D] [--arch A] [--type Debug|Release] [--local]
 #
-# Examples:
-#   ./scripts/build.sh Release local
-#   ./scripts/build.sh Debug docker
-#   PROJECT_NAME=my_app PROJECT_VERSION_MAJOR=2 ./scripts/build.sh
+# Примеры:
+#   ./scripts/build.sh                                  # вариант из .env, Debug, в Docker
+#   ./scripts/build.sh --type Release
+#   ./scripts/build.sh --distro debian-12 --arch amd64 --type Release
+#   ./scripts/build.sh --local                          # на хосте, без Docker
+#   ./scripts/build.sh -o "&:with_postgres=True"        # доп. аргументы передаются в conan
+#
+# Результат: build/<distro>-<arch>/<Type>/bin/<name>-<version>
+#            (при --local: build/<Type>/bin/...)
+# ============================================================
 
-set -e
+source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+parse_args "$@"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Активируем виртуальное окружение (если есть)
-if [ -f "${SCRIPT_DIR}/../.venv/bin/activate" ]; then
-    source "${SCRIPT_DIR}/../.venv/bin/activate"
-fi
-
-# Загружаем конфигурацию проекта
-source "${SCRIPT_DIR}/../project-config.sh"
-
-BUILD_TYPE=${1:-Release}
-BUILD_ENV=${2:-local}
-
-echo "Building $BUILD_TYPE configuration in $BUILD_ENV environment..."
-echo "Project: $PROJECT_NAME $PROJECT_VERSION_STRING"
-echo "Target:  $TARGET_NAME"
-
-if [ "$BUILD_ENV" = "docker" ]; then
-    docker compose run --rm conan-builder bash -c \
-        "cd /workspace && conan create . --build=missing -s build_type=$BUILD_TYPE"
-else
-    conan install . --build=missing -s build_type=$BUILD_TYPE && conan build .
-fi
-
-echo "Build completed!"
+log "Сборка: $(describe)"
+in_env "$(conan_build_cmd "$(quote_args "${EXTRA_ARGS[@]}")")"
+log "Готово: ${BUILD_ROOT}/${BUILD_TYPE}/bin/${TARGET_NAME}"
