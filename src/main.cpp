@@ -1,37 +1,68 @@
-#include "hello.h"
+#include <cstring>
 #include <iostream>
+#include <string>
 
-// Conan-зависимости: fmt и spdlog
-#include <boost/program_options.hpp>
-#include <fmt/core.h>
-#include <spdlog/spdlog.h>
+#include "pfx_reader.hpp"
+#include "program_args.hpp"
 
-int main(int argc, char *argv[]) {
-  // spdlog — установка уровня логирования
-  spdlog::set_level(spdlog::level::debug);
-  spdlog::debug("Starting main() with {} argument(s)", argc);
+#include <openssl/err.h>
+#include <openssl/provider.h>
 
-  // fmt — форматированный вывод
-  std::cout << fmt::format("Hello from Conan + Docker + VSCode!\n");
-  printHello();
+// Объявляем функцию инициализации из статической библиотеки gost-engine
+extern "C" OSSL_provider_init_fn OSSL_provider_init;
 
-  // Демонстрация fmt с аргументами
-  if (argc > 1) {
-    spdlog::info("Processing {} command-line argument(s)", argc - 1);
-    std::cout << fmt::format("\nArguments received:\n");
-    for (int i = 1; i < argc; ++i) {
-      std::cout << fmt::format("  [{}] {}\n", i, argv[i]);
-    }
-    // Демонстрация printFormatted с первым аргументом
-    printFormatted(argv[1], argc);
-  } else {
-    spdlog::warn("No arguments provided");
-    std::cout << fmt::format("\nNo arguments provided.\n");
+bool init_gost_provider() {
+  // 1. Загружаем стандартный базовый провайдер OpenSSL (опционально, но
+  // рекомендуется)
+  OSSL_PROVIDER *base = OSSL_PROVIDER_load(nullptr, "base");
+  if (!base) {
+    std::cerr << "Не удалось загрузить base провайдер\n";
+    return false;
   }
 
-  std::cout << fmt::format(
-      "Usage: ./program-{{major}}.{{minor}}.{{patch}} [args...]\n");
+  // 2. Вручную регистрируем статический ГОСТ-провайдер в памяти OpenSSL
+  if (!OSSL_PROVIDER_add_builtin(nullptr, "gost", OSSL_provider_init)) {
+    std::cerr << "Не удалось зарегистрировать GOST в списке встроенных\n";
+    return false;
+  }
 
-  spdlog::info("Application finished successfully");
+  // 3. Активируем зарегистрированный ГОСТ-провайдер
+  OSSL_PROVIDER *gost = OSSL_PROVIDER_load(nullptr, "gost");
+  if (!gost) {
+    std::cerr << "Ошибка активации GOST провайдера. Код ошибки OpenSSL:\n";
+    ERR_print_errors_fp(stderr);
+    return false;
+  }
+
+  std::cout << "ГОСТ-провайдер (v3.0.3) успешно активирован статически!\n";
+  return true;
+}
+
+int main(int argc, char **argv) {
+  args::ProgramOptions prog_opt;
+
+  auto res = prog_opt.parse(argc, argv);
+
+  if (res.has_error()) {
+    std::cerr << res.error() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (res.has_value() && !res.value()) {
+    return EXIT_SUCCESS;
+  }
+
+  std::string pfx_file_path =
+      args::WorkingDirectory::load(prog_opt.get_variables_map());
+  std::string pfx_password =
+      args::PfxPassword::load(prog_opt.get_variables_map());
+
+  if (!init_gost_provider()) {
+    return EXIT_FAILURE;
+  }
+
+  if (!pfx_reader(pfx_file_path, pfx_password)) {
+    return EXIT_FAILURE;
+  }
   return 0;
 }

@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.15)
 
+cmake_minimum_required(VERSION 3.15)
 # Подключаем конфигурацию проекта из отдельного файла
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/project-config.cmake")
 
@@ -20,15 +20,8 @@ find_package(ctre CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS container program_options)
 find_package(OpenSSL CONFIG REQUIRED)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.h")
 
-add_executable(${TARGET_NAME} ${SOURCES})
-
-target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# Линковка с библиотеками из Conan
-target_link_libraries(${TARGET_NAME} PRIVATE
+set(EXTERNAL_LIBRARIES
     spdlog::spdlog
     fmt::fmt
     PostgreSQL::PostgreSQL
@@ -41,9 +34,24 @@ target_link_libraries(${TARGET_NAME} PRIVATE
     OpenSSL::SSL
 )
 
+add_subdirectory(libraries)
+add_subdirectory(src)
+
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES 
+    OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION_STRING}"
+)
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    module_src
+)
+
 # Явно указать где класть бинарник
-set_target_properties(${TARGET_NAME} PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-install(TARGETS ${TARGET_NAME} DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)

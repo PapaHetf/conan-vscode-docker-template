@@ -38,7 +38,7 @@ class ProjectConan(ConanFile):
         self.requires("libpq/15.4")          # PostgreSQL C client library
         self.requires("libpqxx/7.9.2")       # PostgreSQL C++ client library
         self.requires("ctre/3.9.0")          # Compile-time regular expressions
-        self.requires("openssl/1.1.1t")      # OpenSSL cryptography
+        self.requires("openssl/3.0.15", force=True)        # OpenSSL cryptography
         self.requires("boost/1.86.0")
 
     def layout(self):
@@ -46,6 +46,12 @@ class ProjectConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
+
+        openssl_package_folder = self.dependencies["openssl"].package_folder
+        engines_dir = f"{openssl_package_folder}/lib/engines-1.1"
+        
+        # Передаем переменную прямо в кэш CMake
+        tc.cache_variables["OPENSSL_ENGINES_DIR"] = engines_dir
         tc.generate()
 
         deps = CMakeDeps(self)

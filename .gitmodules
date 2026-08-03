@@ -1,0 +1,3 @@
+[submodule "libraries/gost-engine"]
+	path = libraries/gost-engine
+	url = https://github.com/gost-engine/engine.git
